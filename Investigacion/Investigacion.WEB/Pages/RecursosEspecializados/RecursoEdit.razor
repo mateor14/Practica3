@@ -1,0 +1,74 @@
+﻿@page "/RecursosEspecializados/edit/{Id:int}"
+
+@using System.Net
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+
+<h3>Editar Recurso Especializado</h3>
+
+@if (recursoEspecializado is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <RecursoEspecializadoForm @ref="recursoEspecializadoForm" RecursoEspecializado="recursoEspecializado" OnValidSubmit="Editar" ReturnAction="Return" />
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    private RecursoEspecializado recursoEspecializado;
+    private RecursoEspecializadoForm recursoEspecializadoForm;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var responseHttp = await repository.GetAsync<RecursoEspecializado>($"api/RecursosEspecializados/{Id}");
+        if (responseHttp.Error)
+        {
+            if (responseHttp.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/RecursosEspecializados");
+            }
+            else
+            {
+                var messsage = await responseHttp.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", messsage, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            recursoEspecializado = responseHttp.Response;
+        }
+    }
+
+    private async Task Editar()
+    {
+        var responseHttp = await repository.PutAsync("/api/RecursosEspecializados", recursoEspecializado);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message);
+            return;
+        }
+
+        Return();
+
+        var toast = sweetAlertService.Mixin(new SweetAlertOptions
+        {
+            Toast = true,
+            Position = SweetAlertPosition.BottomEnd,
+            ShowConfirmButton = true,
+            Timer = 3000
+        });
+
+        await toast.FireAsync(icon: SweetAlertIcon.Success, message: "Cambios guardados con éxito.");
+    }
+
+    private void Return()
+    {
+        recursoEspecializadoForm!.FormularioPosteadoConExito = true;
+        navigationManager.NavigateTo("/RecursosEspecializados");
+    }
+}
