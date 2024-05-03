@@ -1,6 +1,6 @@
 # Practica3
 
-Felipe Madrigal Huertas
+Felipe Madrigal Huertas,
 Mateo Restrepo Villa
 
 Plataforma de Gestión de Proyectos de Investigación Científica
