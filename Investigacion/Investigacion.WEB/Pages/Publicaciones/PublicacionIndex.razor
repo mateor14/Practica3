@@ -1,0 +1,133 @@
+﻿@page "/Publicaciones"
+
+@using Investigacion.WEB.Shared
+@using System.Collections.Generic
+@using Microsoft.AspNetCore.Components
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+@using Investigacion.Shared.Entities
+@using Investigacion.WEB.Repositories
+
+<GenericList MyList="Publicaciones">
+
+    <NoRecords>
+
+        <span>
+            <i class="bi bi-journal-text" /> Publicaciones
+            <a class="btn btn-primary btn-sm float-end" href="/Publicaciones/create"><i class="bi bi-plus-circle" />Nueva Publicación</a>
+        </span>
+
+        <p>No hay registros para mostrar...</p>
+
+    </NoRecords>
+
+    <Body>
+        <div class="card">
+            <div class="card-header">
+                <span>
+                    <i class="bi bi-newspaper" /> Publicaciones
+                    <a class="btn btn-primary btn-sm float-end" href="/Publicaciones/create"><i class="bi bi-plus-circle" />Nueva Publicación</a>
+                </span>
+            </div>
+
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Título</th>
+                            <th>Autores</th>
+                            <th>Fecha Publicacion</th>
+                            <th>ID_Proyecto</th>
+                            <!-- Agrega más columnas según sea necesario -->
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var publicacion in Publicaciones)
+                        {
+                            <tr>
+                                <td>@publicacion.Titulo</td>
+                                <td>@publicacion.Autores</td>
+                                <td>@publicacion.Fecha_Publicacion</td>
+                                <td>@publicacion.ID_Proyecto</td>
+                                <!-- Agrega más columnas según sea necesario -->
+                                <td>
+                                    <a href="/Publicaciones/edit/@publicacion.Id" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square" /> Editar</a>
+                                    <button @onclick=@(() => DeleteAsycn(publicacion)) class="btn btn-sm btn-danger"><i class="bi bi-trash-fill" /> Borrar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </Body>
+
+</GenericList>
+
+
+
+@code {
+    public List<Publicacion> Publicaciones { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var responseHttp = await repository.GetAsync<List<Publicacion>>("api/Publicaciones");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+        Publicaciones = responseHttp.Response;
+    }
+
+    private async Task DeleteAsycn(Publicacion publicacion)
+    {
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirmación",
+                Text = $"¿Estás seguro de querer borrar la publicación: {publicacion.Titulo}?",
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true
+            });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHttp = await repository.DeleteAsync<Publicacion>($"api/Publicaciones/{publicacion.Id}");
+        if (responseHttp.Error)
+        {
+            if (responseHttp.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("Publicaciones");
+            }
+            else
+            {
+                var mensajeError = await responseHttp.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+            return;
+        }
+
+        await LoadAsync();
+
+        var toast = sweetAlertService.Mixin(new SweetAlertOptions
+            {
+                Toast = true,
+                Position = SweetAlertPosition.BottomEnd,
+                ShowConfirmButton = true,
+                Timer = 3000
+            });
+        await toast.FireAsync(icon: SweetAlertIcon.Success, message: "Registro borrado con éxito.");
+    }
+}

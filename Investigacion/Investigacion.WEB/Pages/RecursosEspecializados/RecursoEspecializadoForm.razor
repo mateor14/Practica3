@@ -1,0 +1,114 @@
+﻿@page "/RecursosEspecializados/form"
+@inject SweetAlertService swal
+@inject NavigationManager navigationManager
+
+<NavigationLock OnBeforeInternalNavigation="OnBeforeInternalNavigation"></NavigationLock>
+
+<EditForm EditContext="editContext" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label>Nombre:</label>
+        <div>
+            <InputText @bind-Value="RecursoEspecializado.Nombre"></InputText>
+            <ValidationMessage For="@(() => RecursoEspecializado.Nombre)" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label>Cantidad Disponible:</label>
+        <div>
+            <InputNumber @bind-Value="RecursoEspecializado.Cantidad_Disponible"></InputNumber>
+            <ValidationMessage For="@(() => RecursoEspecializado.Cantidad_Disponible)" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label>Proveedor:</label>
+        <div>
+            <InputText @bind-Value="RecursoEspecializado.Proveedor"></InputText>
+            <ValidationMessage For="@(() => RecursoEspecializado.Proveedor)" />
+        </div>
+    </div>
+
+
+    <div class="mb-3">
+        <label>Fecha De Entrega Estimada:</label>
+        <div>
+            <InputDate @bind-Value="RecursoEspecializado.Fecha_Entrega_Estimada"></InputDate>
+            <ValidationMessage For="@(() => RecursoEspecializado.Fecha_Entrega_Estimada)" />
+        </div>
+    </div>
+ 
+
+    <!-- Agrega más campos según sea necesario -->
+
+    <button class="btn btn-primary" type="submit"><i class="bi bi-floppy" /> Guardar Cambios</button>
+    <button class="btn btn-info" type="reset"><i class="bi bi-x-circle" /> Limpiar</button>
+    <button class="btn btn-success" @onclick="ReturnAction"><i class="bi bi-arrow-left" /> Regresar</button>
+</EditForm>
+
+@code {
+    private EditContext editContext = null!;
+
+
+    protected override void OnInitialized()
+    {
+        editContext = new(RecursoEspecializado);
+    }
+
+
+
+    [Parameter]
+
+    [EditorRequired]
+
+    public RecursoEspecializado RecursoEspecializado { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public EventCallback OnValidSubmit { get; set; }
+
+    [EditorRequired]
+    [Parameter]
+    public EventCallback ReturnAction { get; set; }
+
+    public bool FormularioPosteadoConExito { get; set; } = false;
+
+    private async Task OnBeforeInternalNavigation(LocationChangingContext context)
+    {
+        var formularioFueEditado = editContext.IsModified();
+
+        if (!formularioFueEditado)
+        {
+            return;
+        }
+
+        if (FormularioPosteadoConExito)
+
+        {
+
+            return;
+
+        }
+
+        var resultado = await swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirmación",
+                Text = "¿Deseas abandonar la página y perder los cambios?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true
+            });
+
+        var confirmado = !string.IsNullOrEmpty(resultado.Value);
+
+        if (confirmado)
+        {
+            return;
+        }
+
+        context.PreventNavigation();
+    }
+
+
+}

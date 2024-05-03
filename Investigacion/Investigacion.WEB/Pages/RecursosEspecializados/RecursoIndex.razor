@@ -1,0 +1,133 @@
+﻿@page "/RecursosEspecializados"
+
+@using Investigacion.WEB.Shared
+@using System.Collections.Generic
+@using Microsoft.AspNetCore.Components
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+@using Investigacion.Shared.Entities
+@using Investigacion.WEB.Repositories
+
+<GenericList MyList="RecursosEspecializados">
+
+    <NoRecords>
+
+        <span>
+            <i class="bi bi-journal-text" /> RecursosEspecializados
+            <a class="btn btn-primary btn-sm float-end" href="/RecursosEspecializados/create"><i class="bi bi-plus-circle" />Nuevo Recurso</a>
+        </span>
+
+        <p>No hay registros para mostrar...</p>
+
+    </NoRecords>
+
+    <Body>
+        <div class="card">
+            <div class="card-header">
+                <span>
+                    <i class="bi bi-tools" /> Recursos Especializados
+                    <a class="btn btn-primary btn-sm float-end" href="/RecursosEspecializados/create"><i class="bi bi-plus-circle" />Nuevo Recurso Especializado</a>
+                </span>
+            </div>
+
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Cantidad Disponible</th>
+                            <th>Proveedor</th>
+                            <th>Fecha_Entrega_Estimada</th>
+                            <!-- Agrega más columnas según sea necesario -->
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var recurso in RecursosEspecializados)
+                        {
+                            <tr>
+                                <td>@recurso.Nombre</td>
+                                <td>@recurso.Cantidad_Disponible</td>
+                                <td>@recurso.Proveedor</td>
+                                <td>@recurso.Fecha_Entrega_Estimada</td>
+                                <!-- Agrega más columnas según sea necesario -->
+                                <td>
+                                    <a href="/recursos-especializados/edit/@recurso.Id" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square" /> Editar</a>
+                                    <button @onclick=@(() => DeleteAsycn(recurso)) class="btn btn-sm btn-danger"><i class="bi bi-trash-fill" /> Borrar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </Body>
+
+</GenericList>
+
+
+
+@code {
+    public List<RecursoEspecializado> RecursosEspecializados { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var responseHttp = await repository.GetAsync<List<RecursoEspecializado>>("api/RecursosEspecializados");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+        RecursosEspecializados = responseHttp.Response;
+    }
+
+    private async Task DeleteAsycn(RecursoEspecializado recurso)
+    {
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirmación",
+                Text = $"¿Estás seguro de querer borrar el recurso especializado: {recurso.Nombre}?",
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true
+            });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHttp = await repository.DeleteAsync<RecursoEspecializado>($"api/RecursosEspecializados/{recurso.Id}");
+        if (responseHttp.Error)
+        {
+            if (responseHttp.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("RecursosEspecializados");
+            }
+            else
+            {
+                var mensajeError = await responseHttp.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+            return;
+        }
+
+        await LoadAsync();
+
+        var toast = sweetAlertService.Mixin(new SweetAlertOptions
+            {
+                Toast = true,
+                Position = SweetAlertPosition.BottomEnd,
+                ShowConfirmButton = true,
+                Timer = 3000
+            });
+        await toast.FireAsync(icon: SweetAlertIcon.Success, message: "Registro borrado con éxito.");
+    }
+}
