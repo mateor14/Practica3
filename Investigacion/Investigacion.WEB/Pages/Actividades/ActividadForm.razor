@@ -1,0 +1,116 @@
+﻿@page "/Actividades/form"
+@inject SweetAlertService swal
+@inject NavigationManager navigationManager
+
+<NavigationLock OnBeforeInternalNavigation="OnBeforeInternalNavigation"></NavigationLock>
+
+<EditForm EditContext="editContext" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label>Nombre:</label>
+        <div>
+            <InputText @bind-Value="Actividad.Nombre"></InputText>
+            <ValidationMessage For="@(() => Actividad.Nombre)" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label>Descripción:</label>
+        <div>
+            <InputText @bind-Value="Actividad.Descripcion"></InputText>
+            <ValidationMessage For="@(() => Actividad.Descripcion)" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label>Fecha Inicio:</label>
+        <div>
+            <InputDate @bind-Value="Actividad.Fecha_Inicio"></InputDate>
+            <ValidationMessage For="@(() => Actividad.Fecha_Inicio)" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label>Fecha De Finalización Estimada:</label>
+        <div>
+            <InputDate @bind-Value="Actividad.Fecha_Fin_Estimada"></InputDate>
+            <ValidationMessage For="@(() => Actividad.Fecha_Fin_Estimada)" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label>Id del Proyecto:</label>
+        <div>
+            <InputNumber @bind-Value="Actividad.ID_Proyecto"></InputNumber>
+            <ValidationMessage For="@(() => Actividad.ID_Proyecto)" />
+        </div>
+    </div>
+
+    <!-- Agrega más campos según sea necesario -->
+
+    <button class="btn btn-primary" type="submit"><i class="bi bi-floppy" /> Guardar Cambios</button>
+    <button class="btn btn-info" type="reset"><i class="bi bi-x-circle" /> Limpiar</button>
+    <button class="btn btn-success" @onclick="ReturnAction"><i class="bi bi-arrow-left" /> Regresar</button>
+</EditForm>
+
+@code {
+    private EditContext editContext ;
+
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Actividad);
+    }
+    [Parameter]
+    [EditorRequired]
+
+    public ActividadInvestigacion Actividad { get; set; } 
+
+    [Parameter]
+    [EditorRequired]
+    public EventCallback OnValidSubmit { get; set; }
+
+    [EditorRequired]
+    [Parameter]
+    public EventCallback ReturnAction { get; set; }
+
+    public bool FormularioPosteadoConExito { get; set; } = false;
+
+
+    private async Task OnBeforeInternalNavigation(LocationChangingContext context)
+    {
+        var formularioFueEditado = editContext.IsModified();
+
+        if (!formularioFueEditado)
+        {
+            return;
+        }
+
+        if(FormularioPosteadoConExito)
+
+        {
+
+            return;
+
+        }
+
+        var resultado = await swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirmación",
+                Text = "¿Deseas abandonar la página y perder los cambios?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true
+            });
+
+        var confirmado = !string.IsNullOrEmpty(resultado.Value);
+
+        if (confirmado)
+        {
+            return;
+        }
+
+        context.PreventNavigation();
+    }
+
+}

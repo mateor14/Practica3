@@ -1,0 +1,74 @@
+﻿@page "/Actividades/edit/{Id:int}"
+
+@using System.Net
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+
+<h3>Editar Actividad</h3>
+
+@if (actividad is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <ActividadForm @ref="actividadForm" Actividad="actividad" OnValidSubmit="Editar" ReturnAction="Return" />
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    private ActividadInvestigacion actividad;
+    private ActividadForm actividadForm;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var responseHttp = await repository.GetAsync<ActividadInvestigacion>($"api/Actividades/{Id}");
+        if (responseHttp.Error)
+        {
+            if (responseHttp.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/Actividades");
+            }
+            else
+            {
+                var messsage = await responseHttp.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", messsage, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            actividad = responseHttp.Response;
+        }
+    }
+
+    private async Task Editar()
+    {
+        var responseHttp = await repository.PutAsync("/api/Actividades", actividad);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message);
+            return;
+        }
+
+        Return();
+
+        var toast = sweetAlertService.Mixin(new SweetAlertOptions
+        {
+            Toast = true,
+            Position = SweetAlertPosition.BottomEnd,
+            ShowConfirmButton = true,
+            Timer = 3000
+        });
+
+        await toast.FireAsync(icon: SweetAlertIcon.Success, message: "Cambios guardados con éxito.");
+    }
+
+    private void Return()
+    {
+        actividadForm!.FormularioPosteadoConExito = true;
+        navigationManager.NavigateTo("/Actividades");
+    }
+}

@@ -1,0 +1,135 @@
+﻿@page "/Proyectos"
+
+@using Investigacion.WEB.Shared
+@using System.Collections.Generic
+@using Microsoft.AspNetCore.Components
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+@using Investigacion.Shared.Entities
+@using Investigacion.WEB.Repositories
+
+<GenericList MyList="Proyectos">
+
+    <NoRecords>
+      
+        <span>
+            <i class="bi bi-journal-text" /> Proyectos
+            <a class="btn btn-primary btn-sm float-end" href="/proyectos/create"><i class="bi bi-plus-circle" />Nuevo Proyecto</a>
+        </span>
+
+        <p>No hay registros para mostrar...</p>
+
+    </NoRecords>
+
+    <Body>
+
+        <div class="card">
+            <div class="card-header">
+                <span>
+                    <i class="bi bi-journal-text" /> Proyectos
+                    <a class="btn btn-primary btn-sm float-end" href="/proyectos/create"><i class="bi bi-plus-circle" />Nuevo Proyecto</a>
+                </span>
+            </div>
+
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Fin Estimada</th>
+                            <!-- Agrega más columnas según sea necesario -->
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var proyecto in Proyectos)
+                        {
+                            <tr>
+                                <td>@proyecto.Id</td>
+                                <td>@proyecto.Nombre</td>
+                                <td>@proyecto.Descripcion</td>
+                                <td>@proyecto.Fecha_Inicio</td>
+                                <td>@proyecto.Fecha_Fin_Estimada</td>
+                                <!-- Agrega más columnas según sea necesario -->
+                                <td>
+                                    <a href="/proyectos/edit/@proyecto.Id" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square" /> Editar</a>
+                                    <button @onclick=@(() => DeleteAsycn(proyecto)) class="btn btn-sm btn-danger"><i class="bi bi-trash-fill" /> Borrar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </Body>
+
+</GenericList>
+
+
+@code {
+    public List<Proyecto> Proyectos { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var responseHttp = await repository.GetAsync<List<Proyecto>>("api/Proyectos");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+        Proyectos = responseHttp.Response;
+    }
+
+    private async Task DeleteAsycn(Proyecto proyecto)
+    {
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirmación",
+                Text = $"¿Estás seguro de querer borrar el proyecto: {proyecto.Nombre}?",
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true
+            });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHttp = await repository.DeleteAsync<Proyecto>($"api/Proyectos/{proyecto.Id}");
+        if (responseHttp.Error)
+        {
+            if (responseHttp.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("Proyectos");
+            }
+            else
+            {
+                var mensajeError = await responseHttp.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+            return;
+        }
+
+        await LoadAsync();
+
+        var toast = sweetAlertService.Mixin(new SweetAlertOptions
+            {
+                Toast = true,
+                Position = SweetAlertPosition.BottomEnd,
+                ShowConfirmButton = true,
+                Timer = 3000
+            });
+        await toast.FireAsync(icon: SweetAlertIcon.Success, message: "Registro borrado con éxito.");
+    }
+}
