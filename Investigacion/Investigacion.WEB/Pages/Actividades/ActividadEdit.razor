@@ -49,6 +49,7 @@ else
         if (responseHttp.Error)
         {
             var message = await responseHttp.GetErrorMessageAsync();
+            Console.WriteLine(message);
             await sweetAlertService.FireAsync("Error", message);
             return;
         }

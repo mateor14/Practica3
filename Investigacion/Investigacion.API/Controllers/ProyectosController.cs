@@ -57,7 +57,8 @@ namespace Investigacion.API.Controllers
         {
 
             {
-                _context.Update(proyecto);
+                _context.Proyectos.Update(proyecto);
+                await _context.SaveChangesAsync();
                 return Ok(proyecto);
             }
 

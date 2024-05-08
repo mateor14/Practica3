@@ -55,9 +55,12 @@ namespace Investigacion.API.Controllers
         [HttpPut]
         public async Task<ActionResult> Put(ActividadInvestigacion actividadInvestigacion)
         {
-           
-            {
-                _context.Update(actividadInvestigacion);
+
+            { 
+                _context.ActividadesInvestigacion.Update(actividadInvestigacion);
+
+                await _context.SaveChangesAsync();
+
                 return Ok(actividadInvestigacion);
             }
 

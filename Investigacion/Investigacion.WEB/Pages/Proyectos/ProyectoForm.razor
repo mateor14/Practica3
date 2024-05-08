@@ -7,14 +7,6 @@
 <EditForm EditContext="editContext" OnValidSubmit="OnValidSubmit">
     <DataAnnotationsValidator />
 
-    <div class="mb-3">
-        <label>Id del Proyecto:</label>
-        <div>
-            <InputNumber @bind-Value="Proyecto.Id"></InputNumber>
-            <ValidationMessage For="@(() => Proyecto.Id)" />
-        </div>
-    </div>
-
 
     <div class="mb-3">
         <label>Nombre:</label>

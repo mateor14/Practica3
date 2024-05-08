@@ -59,7 +59,8 @@ namespace Investigacion.API.Controllers
         {
 
             {
-                _context.Update(recursoEspecializado);
+                _context.RecursosEspecializados.Update(recursoEspecializado);
+                await _context.SaveChangesAsync();
                 return Ok(recursoEspecializado);
             }
 
